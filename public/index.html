@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GachaSIM — Gacha Nomor Hoki</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --surface: #17171d;
+      --surface2: #1e1e26;
+      --border: #2a2a38;
+      --accent: #6c63ff;
+      --accent2: #a78bfa;
+      --green: #22d3a5;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --text: #f0eeff;
+      --muted: #6b6b8a;
+      --mono: 'Space Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: .018;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Grid bg ── */
+    .grid-bg {
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── Layout ── */
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1; }
+
+    /* ── Navbar ── */
+    nav {
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,15,19,.85);
+      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; max-width: 1100px; margin: 0 auto;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 18px; color: var(--text);
+      text-decoration: none; letter-spacing: -.3px;
+    }
+    .logo-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+    }
+    .badge {
+      font-size: 10px; font-weight: 700; font-family: var(--mono);
+      background: rgba(108,99,255,.15); color: var(--accent2);
+      border: 1px solid rgba(108,99,255,.3);
+      padding: 3px 8px; border-radius: 6px; letter-spacing: .05em;
+    }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(34,211,165,.5); }
+      50% { opacity: .8; transform: scale(1.1); box-shadow: 0 0 0 5px rgba(34,211,165,0); }
+    }
+    .live-label { font-size: 12px; font-weight: 600; color: var(--green); }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 72px 0 56px;
+      text-align: center;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700; font-family: var(--mono);
+      color: var(--accent2); letter-spacing: .1em; text-transform: uppercase;
+      background: rgba(108,99,255,.1); border: 1px solid rgba(108,99,255,.25);
+      padding: 6px 14px; border-radius: 99px; margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      font-weight: 800; line-height: 1.1;
+      letter-spacing: -2px; margin-bottom: 16px;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2) 60%, var(--green));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-sub {
+      color: var(--muted); font-size: 16px; max-width: 480px; margin: 0 auto 36px;
+      line-height: 1.7;
+    }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px;
+      padding: 11px 22px; border-radius: 12px; border: none; cursor: pointer;
+      transition: all .18s; text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(108,99,255,.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(108,99,255,.5); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-ghost {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--border); }
+    .btn-sm {
+      padding: 7px 14px; font-size: 12px; border-radius: 9px; gap: 5px;
+    }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+      margin-bottom: 48px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px 22px;
+      position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(108,99,255,.06), transparent);
+      pointer-events: none;
+    }
+    .stat-num {
+      font-size: 28px; font-weight: 800; font-family: var(--mono);
+      letter-spacing: -1px; color: var(--text);
+    }
+    .stat-num span { color: var(--accent2); }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+    .stat-icon { position: absolute; right: 18px; top: 18px; opacity: .15; }
+
+    /* ── Section header ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 16px; font-weight: 700;
+    }
+    .section-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+
+    /* ── Tab nav ── */
+    .tab-nav {
+      display: flex; gap: 4px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 4px; margin-bottom: 24px;
+      width: fit-content;
+    }
+    .tab-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600;
+      padding: 8px 18px; border-radius: 9px; border: none; cursor: pointer;
+      color: var(--muted); background: transparent; transition: all .15s;
+    }
+    .tab-btn.active {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 2px 12px rgba(108,99,255,.4);
+    }
+    .tab-btn:not(.active):hover { color: var(--text); background: var(--surface2); }
+
+    /* ── Controls bar ── */
+    .controls {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .search-wrap {
+      flex: 1; min-width: 200px;
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 12px;
+    }
+    .search-wrap input {
+      background: transparent; border: none; outline: none;
+      font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 500;
+      color: var(--text); flex: 1;
+    }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .country-filter {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 9px 12px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 13px;
+      color: var(--text); outline: none; cursor: pointer;
+    }
+    .country-filter option { background: var(--surface2); }
+
+    /* ── Numbers grid ── */
+    .numbers-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 12px;
+    }
+    .number-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px;
+      cursor: pointer; transition: all .18s;
+      position: relative; overflow: hidden;
+    }
+    .number-card::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(108,99,255,.06), transparent);
+      opacity: 0; transition: opacity .18s;
+    }
+    .number-card:hover { border-color: rgba(108,99,255,.5); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+    .number-card:hover::after { opacity: 1; }
+    .number-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,99,255,.2);
+    }
+    .num-flag { font-size: 22px; margin-bottom: 8px; }
+    .num-country { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px; }
+    .num-number {
+      font-size: 13px; font-weight: 700; font-family: var(--mono);
+      color: var(--text); letter-spacing: -.3px;
+    }
+    .num-cc {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      font-family: var(--mono); color: var(--accent2);
+      background: rgba(167,139,250,.1); padding: 2px 7px;
+      border-radius: 5px; margin-top: 8px;
+    }
+    .num-id {
+      font-size: 9px; font-family: var(--mono); color: var(--border);
+      margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ── OTP cards ── */
+    .otps-list { display: flex; flex-direction: column; gap: 12px; }
+    .otp-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 20px;
+      display: grid; grid-template-columns: auto 1fr auto;
+      gap: 16px; align-items: start;
+      transition: all .18s;
+    }
+    .otp-card:hover { border-color: rgba(34,211,165,.4); transform: translateX(3px); }
+    .otp-flag-wrap {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--surface2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .otp-main { min-width: 0; }
+    .otp-number {
+      font-size: 12px; font-family: var(--mono); color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .otp-msg {
+      font-size: 13px; color: var(--text); line-height: 1.5;
+      overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .otp-meta {
+      display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+    }
+    .otp-sender {
+      font-size: 10px; font-weight: 700; font-family: var(--mono);
+      color: var(--muted); background: var(--surface2);
+      border: 1px solid var(--border); padding: 2px 8px; border-radius: 5px;
+    }
+    .otp-panel {
+      font-size: 10px; font-weight: 700; font-family: var(--mono);
+      color: var(--accent2); background: rgba(167,139,250,.08);
+      border: 1px solid rgba(167,139,250,.2); padding: 2px 8px; border-radius: 5px;
+    }
+    .otp-time { font-size: 11px; color: var(--muted); }
+    .otp-code-wrap { text-align: right; flex-shrink: 0; }
+    .otp-code {
+      font-size: 22px; font-weight: 800; font-family: var(--mono);
+      color: var(--green); letter-spacing: 2px;
+      text-shadow: 0 0 20px rgba(34,211,165,.3);
+    }
+    .otp-copy {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; padding: 4px 9px; cursor: pointer;
+      margin-top: 6px; transition: all .15s; font-family: 'Space Grotesk', sans-serif;
+    }
+    .otp-copy:hover { border-color: var(--green); color: var(--green); }
+
+    /* ── Loading ── */
+    .loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; gap: 16px; }
+    .spinner {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: var(--muted); font-weight: 500; }
+
+    /* ── Empty ── */
+    .empty { text-align: center; padding: 48px; color: var(--muted); }
+    .empty-icon { margin-bottom: 12px; opacity: .4; }
+
+    /* ── Gacha modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.7);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; padding: 20px;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 24px; padding: 32px; max-width: 420px; width: 100%;
+      transform: scale(.95) translateY(10px); transition: transform .25s;
+      position: relative;
+    }
+    .modal-backdrop.open .modal { transform: scale(1) translateY(0); }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .15s; color: var(--muted);
+    }
+    .modal-close:hover { background: var(--border); color: var(--text); }
+    .modal-flag { font-size: 48px; margin-bottom: 16px; text-align: center; }
+    .modal-country { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+    .modal-number { text-align: center; font-size: 26px; font-weight: 800; font-family: var(--mono); color: var(--text); margin-bottom: 20px; letter-spacing: -1px; }
+    .modal-divider { height: 1px; background: var(--border); margin: 20px 0; }
+    .modal-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .modal-key { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .modal-val { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 600; }
+    .modal-id { font-size: 10px; font-family: var(--mono); color: var(--border); word-break: break-all; text-align: center; margin-top: 16px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 20px;
+      font-size: 13px; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+      z-index: 999; opacity: 0; transition: all .2s;
+      pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Refresh bar ── */
+    .refresh-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 24px;
+    }
+    .refresh-info { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+    .refresh-count { font-weight: 700; color: var(--text); font-family: var(--mono); }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 24px;
+    }
+    .page-btn {
+      width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--muted); font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .page-btn:hover { background: var(--surface2); color: var(--text); }
+    .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .page-btn:disabled { opacity: .3; cursor: not-allowed; }
+    .page-info { font-size: 12px; color: var(--muted); padding: 0 8px; font-family: var(--mono); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border); margin-top: 64px;
+      padding: 28px 0; text-align: center;
+    }
+    .footer-text { font-size: 12px; color: var(--muted); }
+    .footer-text a { color: var(--accent2); text-decoration: none; }
+
+    /* ── AOS override ── */
+    [data-aos] { pointer-events: none; }
+    [data-aos].aos-animate { pointer-events: auto; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .stats-row { grid-template-columns: 1fr; }
+      .otp-card { grid-template-columns: auto 1fr; }
+      .otp-code-wrap { grid-column: 2; }
+      .numbers-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero h1 { letter-spacing: -1px; }
+    }
+  </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      GachaSIM
+    </a>
+    <div class="nav-right">
+      <div class="live-dot"></div>
+      <span class="live-label">Live</span>
+      <span class="badge">allapiproject.zone.id</span>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero wrap">
+  <div class="hero-eyebrow" data-aos="fade-down" data-aos-duration="500">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    Nomor Virtual · OTP · Gacha
+  </div>
+  <h1 data-aos="fade-up" data-aos-duration="600" data-aos-delay="50">
+    Gacha Nomor <span>Hoki</span><br/>Sekarang Juga
+  </h1>
+  <p class="hero-sub" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+    Ribuan nomor virtual dari berbagai negara. Lihat OTP real-time, pilih nomor, dan coba keberuntunganmu.
+  </p>
+  <div class="hero-actions" data-aos="fade-up" data-aos-duration="600" data-aos-delay="150">
+    <button class="btn btn-primary" onclick="fetchAll(); scrollToContent();">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Mulai Gacha
+    </button>
+    <button class="btn btn-ghost" onclick="fetchOtps(); setTab('otps');">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      Lihat OTP
+    </button>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="wrap">
+  <div class="stats-row">
+    <div class="stat-card" data-aos="fade-up" data-aos-delay="0">
+      <div class="stat-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="11" x="1" y="12" rx="2"/><rect width="5" height="7" x="8" y="16" rx="2"/><rect width="5" height="16" x="15" y="7" rx="2"/></svg></div>
+      <div class="stat-num" id="stat-total">—<span>K</span></div>
+      <div class="stat-label">Total Nomor Tersedia</div>
+    </div>
+    <div class="stat-card" data-aos="fade-up" data-aos-delay="80">
+      <div class="stat-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>
+      <div class="stat-num" id="stat-otps">—</div>
+      <div class="stat-label">OTP Masuk Hari Ini</div>
+    </div>
+    <div class="stat-card" data-aos="fade-up" data-aos-delay="160">
+      <div class="stat-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="stat-num" id="stat-time">—</div>
+      <div class="stat-label">OTP Terakhir Diterima</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="wrap" id="content">
+
+  <!-- Refresh bar -->
+  <div class="refresh-bar" data-aos="fade-up">
+    <div class="refresh-info">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Update terakhir: <span class="refresh-count" id="last-update">—</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="fetchAll()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-nav" data-aos="fade-up">
+    <button class="tab-btn active" id="tab-numbers" onclick="setTab('numbers')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="11" x="1" y="12" rx="2"/><rect width="5" height="7" x="8" y="16" rx="2"/><rect width="5" height="16" x="15" y="7" rx="2"/></svg>
+      Nomor Virtual
+    </button>
+    <button class="tab-btn" id="tab-otps" onclick="setTab('otps')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      OTP Masuk
+      <span id="otp-count-badge" style="background:rgba(34,211,165,.15);color:#22d3a5;font-size:10px;padding:1px 6px;border-radius:99px;border:1px solid rgba(34,211,165,.3);display:none;"></span>
+    </button>
+  </div>
+
+  <!-- NUMBERS TAB -->
+  <div id="panel-numbers">
+    <div class="section-header" data-aos="fade-up">
+      <div class="section-title">
+        <div class="section-dot" style="background:#6c63ff"></div>
+        Nomor Virtual
+        <span style="font-size:12px;font-family:var(--mono);color:var(--muted)" id="numbers-shown"></span>
+      </div>
+    </div>
+    <!-- Controls -->
+    <div class="controls" data-aos="fade-up">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b6b8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Cari nomor..." id="search-num" oninput="filterNumbers()"/>
+      </div>
+      <select class="country-filter" id="country-filter" onchange="filterNumbers()">
+        <option value="">Semua Negara</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="gacha()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Gacha!
+      </button>
+    </div>
+    <div class="numbers-grid" id="numbers-grid" data-aos="fade-up"></div>
+    <div class="pagination" id="num-pagination"></div>
+  </div>
+
+  <!-- OTPS TAB -->
+  <div id="panel-otps" style="display:none">
+    <div class="section-header" data-aos="fade-up">
+      <div class="section-title">
+        <div class="section-dot" style="background:#22d3a5"></div>
+        OTP Real-time
+        <span style="font-size:12px;font-family:var(--mono);color:var(--muted)" id="otps-shown"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="fetchOtps()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        Refresh OTP
+      </button>
+    </div>
+    <div class="controls" data-aos="fade-up">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b6b8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Cari OTP, nomor, sender..." id="search-otp" oninput="filterOtps()"/>
+      </div>
+    </div>
+    <div class="otps-list" id="otps-list" data-aos="fade-up"></div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-text">
+    © 2026 GachaSIM · Data dari <a href="https://allapiproject.zone.id" target="_blank">allapiproject.zone.id</a> · Dibuat dengan 🎲
+  </div>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal" onclick="e => e.target === this && closeModal()">
+  <div class="modal" id="modal-inner">
+    <button class="modal-close" onclick="closeModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+    <div class="modal-flag" id="modal-flag"></div>
+    <div class="modal-country" id="modal-country"></div>
+    <div class="modal-number" id="modal-number"></div>
+    <div class="modal-divider"></div>
+    <div class="modal-row"><span class="modal-key">Country Code</span><span class="modal-val" id="modal-cc"></span></div>
+    <div class="modal-row"><span class="modal-key">Panel</span><span class="modal-val" style="color:var(--accent2)">Zone Panel</span></div>
+    <div class="modal-id" id="modal-id"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="copyModalNum()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        Salin Nomor
+      </button>
+      <button class="btn btn-ghost" onclick="closeModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3a5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">Disalin!</span>
+</div>
+
+<script>
+AOS.init({ once: true, easing: 'ease-out-cubic', duration: 500 });
+
+const API = 'https://allapiproject.zone.id/api/gacha';
+const PAGE_SIZE = 24;
+
+let allNumbers = [];
+let filteredNumbers = [];
+let allOtps = [];
+let filteredOtps = [];
+let currentPage = 1;
+let currentTab = 'numbers';
+let selectedModal = null;
+
+/* ── Fetch ── */
+async function fetchNumbers() {
+  showLoading('numbers-grid', 'numbers');
+  try {
+    const r = await fetch(`${API}/numbers`, { headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' } });
+    const d = await r.json();
+    if (!d.success) throw new Error('API error');
+    allNumbers = d.numbers || [];
+    filteredNumbers = [...allNumbers];
+    updateStat('stat-total', Math.round(d.total / 1000) + 'K');
+    buildCountryFilter();
+    currentPage = 1;
+    renderNumbers();
+  } catch(e) {
+    document.getElementById('numbers-grid').innerHTML = `<div class="empty"><div class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6b6b8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg></div><p style="font-size:13px">Gagal memuat data.<br/>Cek koneksi atau coba lagi.</p></div>`;
+  }
+}
+
+async function fetchOtps() {
+  showLoading('otps-list', 'otps');
+  try {
+    const r = await fetch(`${API}/otps?limit=20`, { headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' } });
+    const d = await r.json();
+    if (!d.success) throw new Error('API error');
+    allOtps = d.otps || [];
+    filteredOtps = [...allOtps];
+    updateStat('stat-otps', d.total || allOtps.length);
+    if (allOtps.length) updateStat('stat-time', timeAgo(allOtps[0].timestamp));
+    const badge = document.getElementById('otp-count-badge');
+    badge.style.display = 'inline';
+    badge.textContent = allOtps.length;
+    renderOtps();
+  } catch(e) {
+    document.getElementById('otps-list').innerHTML = `<div class="empty"><p style="font-size:13px;color:var(--muted)">Gagal memuat OTP.</p></div>`;
+  }
+}
+
+async function fetchAll() {
+  document.getElementById('last-update').textContent = new Date().toLocaleTimeString('id-ID');
+  await Promise.all([fetchNumbers(), fetchOtps()]);
+}
+
+/* ── Render Numbers ── */
+function renderNumbers() {
+  const grid = document.getElementById('numbers-grid');
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const slice = filteredNumbers.slice(start, start + PAGE_SIZE);
+  document.getElementById('numbers-shown').textContent = `${filteredNumbers.length.toLocaleString()} nomor`;
+
+  if (!slice.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6b6b8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div><p style="font-size:13px">Tidak ada nomor ditemukan.</p></div>`;
+    document.getElementById('num-pagination').innerHTML = '';
+    return;
+  }
+
+  grid.innerHTML = slice.map(n => `
+    <div class="number-card" onclick="openModal(${JSON.stringify(n).replace(/"/g,'&quot;')})">
+      <div class="num-flag">${n.flag}</div>
+      <div class="num-country">${n.country}</div>
+      <div class="num-number">+${n.number}</div>
+      <div><span class="num-cc">+${n.countryCode}</span></div>
+      <div class="num-id">${n.id}</div>
+    </div>
+  `).join('');
+
+  renderPagination();
+}
+
+function renderPagination() {
+  const total = Math.ceil(filteredNumbers.length / PAGE_SIZE);
+  const pag = document.getElementById('num-pagination');
+  if (total <= 1) { pag.innerHTML = ''; return; }
+
+  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>`;
+  html += `<span class="page-info">${currentPage} / ${total}</span>`;
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>`;
+  pag.innerHTML = html;
+}
+
+function goPage(p) {
+  const total = Math.ceil(filteredNumbers.length / PAGE_SIZE);
+  if (p < 1 || p > total) return;
+  currentPage = p;
+  renderNumbers();
+  document.getElementById('content').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── Render OTPs ── */
+function renderOtps() {
+  const list = document.getElementById('otps-list');
+  document.getElementById('otps-shown').textContent = `${filteredOtps.length} entri`;
+
+  if (!filteredOtps.length) {
+    list.innerHTML = `<div class="empty"><p style="font-size:13px;color:var(--muted)">Tidak ada OTP.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filteredOtps.map(o => `
+    <div class="otp-card">
+      <div class="otp-flag-wrap">${o.flag}</div>
+      <div class="otp-main">
+        <div class="otp-number">+${o.number} · ${o.country}</div>
+        <div class="otp-msg">${cleanMsg(o.message)}</div>
+        <div class="otp-meta">
+          <span class="otp-sender">${o.sender}</span>
+          <span class="otp-panel">${o.panel}</span>
+          <span class="otp-time">${o.time}</span>
+        </div>
+      </div>
+      <div class="otp-code-wrap">
+        <div class="otp-code">${formatOtp(o.otp)}</div>
+        <button class="otp-copy" onclick="copyText('${o.otp}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          Salin
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ── Filter ── */
+function filterNumbers() {
+  const q = document.getElementById('search-num').value.toLowerCase();
+  const country = document.getElementById('country-filter').value;
+  filteredNumbers = allNumbers.filter(n => {
+    const matchQ = !q || n.number.includes(q) || n.country.toLowerCase().includes(q) || n.id.includes(q);
+    const matchC = !country || n.country === country;
+    return matchQ && matchC;
+  });
+  currentPage = 1;
+  renderNumbers();
+}
+
+function filterOtps() {
+  const q = document.getElementById('search-otp').value.toLowerCase();
+  filteredOtps = allOtps.filter(o =>
+    !q || o.number.includes(q) || o.otp.includes(q) || o.sender.toLowerCase().includes(q) || cleanMsg(o.message).toLowerCase().includes(q)
+  );
+  renderOtps();
+}
+
+function buildCountryFilter() {
+  const countries = [...new Set(allNumbers.map(n => n.country))].sort();
+  const sel = document.getElementById('country-filter');
+  const curr = sel.value;
+  sel.innerHTML = '<option value="">Semua Negara</option>' + countries.map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.value = curr;
+}
+
+/* ── Gacha ── */
+function gacha() {
+  if (!allNumbers.length) return;
+  const rand = allNumbers[Math.floor(Math.random() * allNumbers.length)];
+  openModal(rand);
+  showToast('🎲 Gacha! Nomor acak dipilih');
+}
+
+/* ── Modal ── */
+function openModal(n) {
+  if (typeof n === 'string') n = JSON.parse(n.replace(/&quot;/g, '"'));
+  selectedModal = n;
+  document.getElementById('modal-flag').textContent = n.flag;
+  document.getElementById('modal-country').textContent = n.country;
+  document.getElementById('modal-number').textContent = '+' + n.number;
+  document.getElementById('modal-cc').textContent = '+' + n.countryCode;
+  document.getElementById('modal-id').textContent = 'ID: ' + n.id;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function copyModalNum() {
+  if (!selectedModal) return;
+  copyText(selectedModal.number);
+}
+
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+/* ── Tabs ── */
+function setTab(t) {
+  currentTab = t;
+  document.getElementById('panel-numbers').style.display = t === 'numbers' ? '' : 'none';
+  document.getElementById('panel-otps').style.display = t === 'otps' ? '' : 'none';
+  document.getElementById('tab-numbers').className = 'tab-btn' + (t === 'numbers' ? ' active' : '');
+  document.getElementById('tab-otps').className = 'tab-btn' + (t === 'otps' ? ' active' : '');
+}
+
+/* ── Utils ── */
+function showLoading(id, type) {
+  const el = document.getElementById(id);
+  if (type === 'numbers') {
+    el.innerHTML = '<div class="loading-wrap" style="grid-column:1/-1"><div class="spinner"></div><div class="loading-text">Memuat nomor...</div></div>';
+    el.style.display = 'grid';
+  } else {
+    el.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><div class="loading-text">Memuat OTP...</div></div>';
+  }
+}
+
+function updateStat(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function cleanMsg(msg) {
+  return (msg || '').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&#039;/g,"'").replace(/&quot;/g,'"').replace(/\\n/g,' ');
+}
+
+function formatOtp(otp) {
+  if (!otp) return '—';
+  if (otp.length === 6) return otp.slice(0,3) + '-' + otp.slice(3);
+  return otp;
+}
+
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (diff < 60) return diff + 'd lalu';
+  if (diff < 3600) return Math.floor(diff/60) + 'm lalu';
+  return Math.floor(diff/3600) + 'j lalu';
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Disalin: ' + text)).catch(() => showToast('Gagal salin'));
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function scrollToContent() {
+  setTimeout(() => document.getElementById('content').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+/* ── Init ── */
+window.addEventListener('DOMContentLoaded', () => {
+  fetchAll();
+  // Auto refresh OTP tiap 60 detik
+  setInterval(fetchOtps, 60000);
+});
+</script>
+</body>
+</html>
